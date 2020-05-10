@@ -185,7 +185,7 @@ def ml_loop(side: str):
         else:
             if side == "1P":
                 command = ml_loop_for_1P(feature)
-             else:
+            else:
                 command = ml_loop_for_2P()
 
             if command == 0:
