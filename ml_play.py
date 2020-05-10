@@ -28,11 +28,19 @@ def ml_loop(side: str):
     # 1. Put the initialization code here
     ball_served = False
     who_serve = 2
-    filename = path.join(path.dirname(__file__),"save/SVMRegression_1.pickle")
+    filename = path.join(path.dirname(__file__),"save\SVMRegression_1.pickle")
     with open(filename, 'rb') as file:
         clf = pickle.load(file)
         
-        
+    def move_to(player, pred) : #move platform to predicted position to catch ball 
+        if player == '1P':
+            if scene_info["platform_1P"][0]+20  > (pred-10) and scene_info["platform_1P"][0]+20 < (pred+10): return 0 # NONE
+            elif scene_info["platform_1P"][0]+20 <= (pred-10) : return 1 # goes right
+            else : return 2 # goes left
+        else :
+            if scene_info["platform_2P"][0]+20  > (pred-10) and scene_info["platform_2P"][0]+20 < (pred+10): return 0 # NONE
+            elif scene_info["platform_2P"][0]+20 <= (pred-10) : return 1 # goes right
+            else : return 2 # goes left
     def blo_dir():
         if(blo_ori_x > blo_now_x):
             return (24,0)
@@ -113,7 +121,25 @@ def ml_loop(side: str):
             else:
                 return 0
         
-    
+    def ml_loop_for_2P():  # as same as 1P
+        if scene_info["ball_speed"][1] > 0 : 
+            return move_to(player = '2P',pred = 100)
+        else : 
+            x = ( scene_info["platform_2P"][1]+30-scene_info["ball"][1] ) // scene_info["ball_speed"][1] 
+            pred = scene_info["ball"][0]+(scene_info["ball_speed"][0]*x) 
+            bound = pred // 200 
+            if (bound > 0):
+                if (bound%2 == 0):
+                    pred = pred - bound*200 
+                else :
+                    pred = 200 - (pred - 200*bound)
+            elif (bound < 0) :
+                if bound%2 ==1:
+                    pred = abs(pred - (bound+1) *200)
+                else :
+                    pred = pred + (abs(bound)*200)
+            return move_to(player = '2P',pred = pred)
+
             
     # 2. Inform the game process that ml process is ready
     blo_ori_x = 0
@@ -159,7 +185,8 @@ def ml_loop(side: str):
         else:
             if side == "1P":
                 command = ml_loop_for_1P(feature)
-            
+             else:
+                command = ml_loop_for_2P()
 
             if command == 0:
                 comm.send_to_game({"frame": scene_info["frame"], "command": "NONE"})
