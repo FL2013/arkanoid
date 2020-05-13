@@ -94,7 +94,7 @@ def ml_loop(side: str):
         fall = clf.predict(feature)
         
        
-        if(feature[0,3]<12 and fall>115): fall=fall+15
+        if(feature[0,3]<12 and fall>115): fall=fall
         
         if fall < scene_info["platform_1P"][0]+10:
             return 2
