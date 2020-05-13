@@ -28,7 +28,7 @@ def ml_loop(side: str):
     # 1. Put the initialization code here
     ball_served = False
     who_serve = 2
-    filename = path.join(path.dirname(__file__),"save/SVMRegression_1.pickle")
+    filename = path.join(path.dirname(__file__),"save\SVMRegression_1.pickle")
     with open(filename, 'rb') as file:
         clf = pickle.load(file)
         
@@ -43,16 +43,26 @@ def ml_loop(side: str):
             if(x>200):x=200-(x-200)
             else : x=x*(-1)
         return x
-    def blo_dir():
+    def blo_dir(sp):
+        a=(415-260)/sp*3
         if(blo_ori_x > blo_now_x):
-            return (24,0)
+            b=blo_now_x+30-a
+            if(blo_now_x-a<0): 
+                a= (blo_now_x-a)*(-1)
+                b=b+2*a
+            return (a,b)
         else:
-            return (0,24)
+            b=blo_now_x+30+a
+            a=blo_now_x+a
+            if(b>200):
+                b=200-(b-200)
+                a=a-2*(200-b)
+            return (a,b)
     def move_mode(feature,real_x):
         
-        if(feature[0,3]>19):
+        if(feature[0,3]>13):
             
-            (a,b)=blo_dir()
+            (a,b)=blo_dir(feature[0,3])
             if(feature[0,2]>0):
                 x0 = real_x + (415-260)
                 x1 = real_x + (415-260) / feature[0,3] * (feature[0,3]+3)
@@ -60,13 +70,13 @@ def ml_loop(side: str):
                 x0=outer(x0)
                 x1=outer(x1)
                 x2=outer(x2)
-                if(x0<feature[0,4]-a or x0>feature[0,4]+30+b):
+                if(x0<a or x0>b):
                     
                     return 0
-                elif(x1<feature[0,4]-a or x1>feature[0,4]+30+b):
+                elif(x1<a or x1>b):
                     
                     return 1
-                elif(x2<feature[0,4]-a or x2>feature[0,4]+30+b):
+                elif(x2<a or x2>b):
                     
                     return 2
                 else:
@@ -79,13 +89,13 @@ def ml_loop(side: str):
                 x0=outer(x0)
                 x1=outer(x1)
                 x2=outer(x2)
-                if(x0<feature[0,4]-a or x0>feature[0,4]+30+b):
+                if(x0<a or x0>b):
                     
                     return 0
-                elif(x1<feature[0,4]-a or x1>feature[0,4]+30+b):
+                elif(x1<a or x1>b):
                     
                     return 1
-                elif(x2<feature[0,4]-a or x2>feature[0,4]+30+b):
+                elif(x2<a or x2>b):
                     
                     return 2
                 
