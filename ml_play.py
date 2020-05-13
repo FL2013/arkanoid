@@ -28,7 +28,7 @@ def ml_loop(side: str):
     # 1. Put the initialization code here
     ball_served = False
     who_serve = 2
-    filename = path.join(path.dirname(__file__),"save/SVMRegression_1.pickle")
+    filename = path.join(path.dirname(__file__),"save\SVMRegression_1.pickle")
     with open(filename, 'rb') as file:
         clf = pickle.load(file)
         
@@ -54,16 +54,16 @@ def ml_loop(side: str):
                 while x2<0:
                     x2=x2+200
                 if(x0<feature[0,4]-a or x0>feature[0,4]+30+b):
-                    print("safe")
+                    
                     return 0
                 elif(x1<feature[0,4]-a or x1>feature[0,4]+30+b):
-                    print("safe")
+                    
                     return 1
                 elif(x2<feature[0,4]-a or x2>feature[0,4]+30+b):
-                    print("safe")
+                    
                     return 2
                 else:
-                    print("not safe")
+                    
                     return 0
             else:
                 x0 = real_x - (415-260)
@@ -76,17 +76,17 @@ def ml_loop(side: str):
                 while x2>200:
                     x2=x2-200
                 if(x0<feature[0,4]-a or x0>feature[0,4]+30+b):
-                    print("safe")
+                    
                     return 0
                 elif(x1<feature[0,4]-a or x1>feature[0,4]+30+b):
-                    print("safe")
+                    
                     return 1
                 elif(x2<feature[0,4]-a or x2>feature[0,4]+30+b):
-                    print("safe")
+                    
                     return 2
                 
                 else:
-                    print("not safe")
+                    
                     return 0
         return random.randint(1,2)
         
