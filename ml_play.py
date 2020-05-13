@@ -28,7 +28,7 @@ def ml_loop(side: str):
     # 1. Put the initialization code here
     ball_served = False
     who_serve = 2
-    filename = path.join(path.dirname(__file__),"save\SVMRegression_1.pickle")
+    filename = path.join(path.dirname(__file__),"save/SVMRegression_1.pickle")
     with open(filename, 'rb') as file:
         clf = pickle.load(file)
         
