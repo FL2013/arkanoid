@@ -28,11 +28,21 @@ def ml_loop(side: str):
     # 1. Put the initialization code here
     ball_served = False
     who_serve = 2
-    filename = path.join(path.dirname(__file__),"save/SVMRegression_1.pickle")
+    filename = path.join(path.dirname(__file__),"save\SVMRegression_1.pickle")
     with open(filename, 'rb') as file:
         clf = pickle.load(file)
         
-        
+    def low_spe_fall(feature):
+        y=415-feature[0,1]
+        x=feature[0,0]+ y/feature[0,3]*feature[0,2]
+        if(x>200): x=200-(x-200)
+        if(x<0): x=x*(-1)
+        return x
+    def outer(x):
+        while(x>200 or x<0):
+            if(x>200):x=200-(x-200)
+            else : x=x*(-1)
+        return x
     def blo_dir():
         if(blo_ori_x > blo_now_x):
             return (24,0)
@@ -40,19 +50,16 @@ def ml_loop(side: str):
             return (0,24)
     def move_mode(feature,real_x):
         
-        if(feature[0,3]>20):
+        if(feature[0,3]>19):
             
             (a,b)=blo_dir()
             if(feature[0,2]>0):
                 x0 = real_x + (415-260)
                 x1 = real_x + (415-260) / feature[0,3] * (feature[0,3]+3)
                 x2 = real_x - (415-260)
-                while x0>200:
-                    x0=x0-200
-                while x1>200:
-                    x1=x1-200
-                while x2<0:
-                    x2=x2+200
+                x0=outer(x0)
+                x1=outer(x1)
+                x2=outer(x2)
                 if(x0<feature[0,4]-a or x0>feature[0,4]+30+b):
                     
                     return 0
@@ -69,12 +76,9 @@ def ml_loop(side: str):
                 x0 = real_x - (415-260)
                 x1 = real_x - (415-260) / feature[0,3] * (feature[0,3]+3)
                 x2 = real_x + (415-260)
-                while x0<0:
-                    x0=x0+200
-                while x1<0:
-                    x1=x1+200
-                while x2>200:
-                    x2=x2-200
+                x0=outer(x0)
+                x1=outer(x1)
+                x2=outer(x2)
                 if(x0<feature[0,4]-a or x0>feature[0,4]+30+b):
                     
                     return 0
@@ -94,7 +98,7 @@ def ml_loop(side: str):
         fall = clf.predict(feature)
         
        
-        if(feature[0,3]<12 and fall>115): fall=fall
+        if(feature[0,3]<10 and feature[0,1]>280 ): fall=low_spe_fall(feature)
         
         if fall < scene_info["platform_1P"][0]+10:
             return 2
@@ -102,8 +106,8 @@ def ml_loop(side: str):
             return 1
         else :
             real_x = feature[0,0] + (415-feature[0,1]) / feature[0,3] * feature[0,2]
-            
-            if(feature[0,1]+feature[0,3]>=415 and real_x<180 and real_x>20):
+            real_x = outer(real_x)
+            if(feature[0,1]+feature[0,3]>=415 and real_x<190 and real_x>10):
                  if real_x < scene_info["platform_1P"][0]+5:
                      return 2
                  elif real_x > scene_info["platform_1P"][0]+25:
