@@ -1,77 +1,212 @@
+# -*- coding: utf-8 -*-
 """
-The template of the main script of the machine learning process
+Created on Mon Jun  8 14:37:27 2020
+
+@author: d2460
 """
 
-import games.arkanoid.communication as comm
-from games.arkanoid.communication import ( \
-    SceneInfo, GameStatus, PlatformAction
-)
+import random
+import math
 
-def ml_loop():
-    """
-    The main loop of the machine learning process
-
-    This loop is run in a separate process, and communicates with the game process.
-
-    Note that the game process won't wait for the ml process to generate the
-    GameInstruction. It is possible that the frame of the GameInstruction
-    is behind of the current frame in the game process. Try to decrease the fps
-    to avoid this situation.
-    """
-
-    # === Here is the execution order of the loop === #
-    # 1. Put the initialization code here.
-    ball_served = False  #play ball or not
+class MLPlay:
     
-    ball_x0=ball_x1=0
-    # 2. Inform the game process that ml process is ready before start the loop.
-    comm.ml_ready()
-    ball_x1=comm.get_scene_info().ball[0]
-    # 3. Start an endless loop.
-    while True:
-        # 3.1. Receive the scene information sent from the game process.
-        scene_info = comm.get_scene_info()
+    alive = True
+    
+    
+    def __init__(self, player):
+        self.player = player
+        if self.player == "player1":
+            self.player_no = 0
+        elif self.player == "player2":
+            self.player_no = 1
+        elif self.player == "player3":
+            self.player_no = 2
+        elif self.player == "player4":
+            self.player_no = 3
+        self.car_vel = 0
+        self.car_pos = ()
+        global alive
+        alive = True
+        pass
 
-        # 3.2. If the game is over or passed, the game process will reset
-        #      the scene and wait for ml process doing resetting job.
-        if scene_info.status == GameStatus.GAME_OVER or \
-            scene_info.status == GameStatus.GAME_PASS:
-            # Do some stuff if needed
-            ball_served = False
-            ball_x1=scene_info.ball[0]
-            # 3.2.1. Inform the game process that ml process is ready
-            comm.ml_ready()
-            continue
-
-        # 3.3. Put the code here to handle the scene information
+    def update(self, scene_info):
+        """
+        Generate the command according to the received scene information
+        """
+        global alive
+        if(alive):
             
-        ball_x0=ball_x1
-        ball_x1=scene_info.ball[0]
-        ball_height = 400-scene_info.ball[1]
-        
-        if ball_x1 > ball_x0 :
-             ball_endx = scene_info.ball[0] + ball_height
-        else :
-             ball_endx = scene_info.ball[0] - ball_height
-             
-        if  ball_endx > 200 :
-            ball_endx = 400 - ball_endx 
-        elif ball_endx < 0 :
-            ball_endx = -1 * ball_endx
-            
+            if scene_info["status"] != "ALIVE":
+                alive=False
+                return "RESET"
             
         
-       
+            run_dis = [997,998,999,1000,1001,1000,999,998,997]
+            run_dis_sort=[997,998,999,1000,1001,1000,999,998,997]
+            run_dis_num = [0,1,2,3,4,5,6,7,8]
+            route_vel = [0,0,0,0,0,0,0,0,0]
+            run_pos = [900,900,900,900,900,900,900,900,900]
+            
+            self.car_pos = scene_info[self.player]
+            if( not self.car_pos ):
+                return 
+            for car in scene_info["cars_info"]:
+                if car["id"]==self.player_no:
+                    self.car_vel = car["velocity"]
+            for car in scene_info["cars_info"]:
+                if car["id"]!=self.player_no:
+                    if car["pos"][1] - self.car_pos[1] < -90  :
+                        vel = self.car_vel - car["velocity"]                        
+                        safe_dis = 80 + 11*vel + 15         # safe
+                        dis = self.car_pos[1] - car["pos"][1]
+                        route = math.floor(car["pos"][0] / 70)
+                        if dis - safe_dis < run_dis[route]:
+                            route_vel[route] = car["velocity"]
+                            run_dis[route] = dis - safe_dis
+                            run_dis_sort[route] = dis - safe_dis
+                            run_pos[route] = car["pos"][1]
+                        else:
+                            if car["velocity"] < route_vel[route]:
+                                diff = route_vel[route] -  car["velocity"]
+                                if car["pos"][1] < run_pos[route] - 160 :
+                                     run_dis[route] -= 5*diff
+                                elif car["pos"][1] < run_pos[route] : 
+                                     run_dis[route] -= 10*diff   # brake dif
+                        if car["id"] < 3 and (car["pos"][0] % 70 < 20 or car["pos"][0] % 70 > 50):
+                            route_2 = 0
+                            if(car["pos"][0] % 70 < 20): route_2 = route-1
+                            else : route_2 = route+1
+                            if dis - safe_dis < run_dis[route_2]:
+                                run_dis[route_2] = dis - safe_dis 
+                                run_dis_sort[route_2] = dis - safe_dis 
+                            
+                    elif car["pos"][1] - self.car_pos[1] >= -90 and car["pos"][1] - self.car_pos[1] < 70:
+                        route = math.floor( car["pos"][0] / 70 )
+                        run_dis[route] = -100
+                        run_dis_sort[route]=-100
+                        if car["id"] < 3 and (car["pos"][0] % 70 < 20 or car["pos"][0] % 70 > 50):
+                            route_2 = 0
+                            if(car["pos"][0] % 70 < 20): route_2 = route-1
+                            else : route_2 = route+1
+                            run_dis[route_2] = -100
+                            run_dis_sort[route_2]=-100
+                    elif car["pos"][1] - self.car_pos[1] > 70 and car["pos"][1] - self.car_pos[1] < 80:
+                        vel = self.car_vel - car["velocity"]                        
+                        safe_dis = 80 + 12*(-1)*vel + 13
+                        dis = self.car_pos[1] - car["pos"][1]
+                        route = math.floor(car["pos"][0] / 70)
+                        if dis - safe_dis < run_dis[route]:
+                            run_dis[route] = dis - safe_dis
+                            run_dis_sort[route] = dis - safe_dis
+                        if car["id"] < 3 and (car["pos"][0] % 70 < 20 or car["pos"][0] % 70 > 50):
+                            route_2 = 0
+                            if(car["pos"][0] % 70 < 20): route_2 = route-1
+                            else : route_2 = route+1
+                            if dis - safe_dis < run_dis[route_2]:
+                                run_dis[route_2] = dis - safe_dis 
+                                run_dis_sort[route_2] = dis - safe_dis 
+            """print(self.player,run_dis)"""
+            for i in range(0,8):
+                for j in range(i+1,9):
+                    if run_dis_sort[i] < run_dis_sort[j]:
+                        temp = run_dis_num[i]
+                        run_dis_num[i] = run_dis_num[j]
+                        run_dis_num[j] = temp
+                        temp = run_dis_sort[i]
+                        run_dis_sort[i] = run_dis_sort[j]
+                        run_dis_sort[j] = temp
+            command=[]
+            can_go = True
+            go_route = 0
+            
+           
+            
+            self_route = math.floor((self.car_pos[0])/70)
+            for i in range(0,9):
                 
+                can_go=True
+                if(self_route == run_dis_num[i]):
+                    if(self.car_pos[0] < 35+70*self_route):
+                        command.append("MOVE_RIGHT")
+                    elif(self.car_pos[0] > 35+70*self_route):
+                        command.append("MOVE_LEFT")
+                    go_route = run_dis_num[i]
+                    break
+                elif self_route < run_dis_num[i] :
+                    for j in range(self_route+1,run_dis_num[i]+1):
+                        if(run_dis[j] < 10):
+                            can_go=False
+                            break
+                    if(self.car_pos[1]>730 and run_dis[self_route]>40):
+                        can_go=False
+                    if(not can_go):
+                        
+                        continue
+                    else:
+                        
+                        go_route = run_dis_num[i]
+                        command.append("MOVE_RIGHT")
+                        break
+                else:
+                    for j in range(run_dis_num[i],self_route):                       
+                        if(run_dis[j] < 10):
+                            can_go=False
+                            break
+                    if(self.car_pos[1]>730 and run_dis[self_route]>40):
+                        can_go=False
+                    if(not can_go):
+                        
+                        continue
+                    else:
+                        
+                        go_route = run_dis_num[i]
+                        command.append("MOVE_LEFT")
+                        break
+                    
+           
             
-        # 3.4. Send the instruction for this frame to the game process
-        if not ball_served:
-            comm.send_instruction(scene_info.frame, PlatformAction.SERVE_TO_LEFT)  #RIGHT  NONE
-            ball_served = True
-        elif ball_endx > scene_info.platform[0] + 36 :
-            comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
-        elif ball_endx < scene_info.platform[0] +4 :
-            comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-        else:
-            comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+            left = self.car_pos[0]%70
+            self_route_2 = self_route
+            if(left < 15): self_route_2-=1
+            elif(left > 55): self_route_2+=1
             
+            if(self_route_2<0 or self_route_2>8):self_route_2=self_route
+            
+            
+            if(scene_info["frame"]<150):
+                command.append("SPEED")
+                return command
+            
+            if(go_route < self_route):
+                if(run_dis[self_route] > 20 and run_dis[self_route_2] > 20 and run_dis[self_route-1] > 20 ):
+                    command.append("SPEED")
+                elif(run_dis[self_route] > 10 and run_dis[self_route_2] > 10 and run_dis[self_route-1] > 10):
+                    return command
+                else:
+                    command.append("BRAKE")
+            elif(go_route > self_route):
+                if(run_dis[self_route] > 20 and run_dis[self_route_2] > 20 and run_dis[self_route+1] > 20):
+                    command.append("SPEED")
+                elif(run_dis[self_route] > 10 and run_dis[self_route_2] > 10 and run_dis[self_route+1] > 10):
+                    return command
+                else:
+                    command.append("BRAKE")
+            else:
+               if(run_dis[self_route] > 20 and run_dis[self_route_2] > 20 ):
+                    command.append("SPEED")
+               elif(run_dis[self_route] > 10 and run_dis[self_route_2] > 10 ):
+                    return command
+               else:
+                    command.append("BRAKE")
+
+            
+           
+            
+            return command
+
+
+    def reset(self):
+        """
+        Reset the status
+        """
+        pass
