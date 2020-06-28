@@ -28,6 +28,17 @@ class MLPlay:
         global alive
         alive = True
         pass
+    def get_coin(car,coi):
+        c_x=car[0]
+        c_y=car[1]+40
+        if(coi[0] < car[0]):
+            c_x=car[0]-20
+        else :
+            c_x=car[0]+20
+        if -(coi[1]-c_y)/abs(coi[0]-c_x) >= 5/3:
+            return 1
+        else:
+            return 0
 
     def update(self, scene_info):
         """
@@ -41,11 +52,12 @@ class MLPlay:
                 return "RESET"
             
         
-            run_dis = [997,998,999,1000,1001,1000,999,998,997]
+            run_dis = [900,950,1000,1100,1105,1100,1000,950,900]
             run_dis_sort=[997,998,999,1000,1001,1000,999,998,997]
             run_dis_num = [0,1,2,3,4,5,6,7,8]
             route_vel = [0,0,0,0,0,0,0,0,0]
             run_pos = [900,900,900,900,900,900,900,900,900]
+            player_r = [0,0,0,0,0,0,0,0,0]
             
             self.car_pos = scene_info[self.player]
             if( not self.car_pos ):
@@ -53,6 +65,9 @@ class MLPlay:
             for car in scene_info["cars_info"]:
                 if car["id"]==self.player_no:
                     self.car_vel = car["velocity"]
+                elif car["id"] <=3 and car["pos"][1] < self.car_pos[1]:
+                    route = math.floor(car["pos"][0] / 70)
+                    player_r[route]=1
             for car in scene_info["cars_info"]:
                 if car["id"]!=self.player_no:
                     if car["pos"][1] - self.car_pos[1] < -90  :
@@ -106,6 +121,30 @@ class MLPlay:
                                 run_dis[route_2] = dis - safe_dis 
                                 run_dis_sort[route_2] = dis - safe_dis 
             """print(self.player,run_dis)"""
+            
+            for coin in scene_info["coins"]:
+                if abs(coin[0]-self.car_pos[0]) <= 20:
+                    route = math.floor(coin[0] / 70)
+                    if(run_dis[route]>30 and player_r[route]!=1):
+                        run_dis[route] =  3000 - abs(coin[0]-self.car_pos[0])*2 - abs(coin[1]-self.car_pos[1])*2
+                        run_dis_sort[route] =  3000 - abs(coin[0]-self.car_pos[0])*2 - abs(coin[1]-self.car_pos[1])*2
+                else:
+                    g=0
+                    c_x=self.car_pos[0]
+                    c_y=self.car_pos[1]+40
+                    if(coin[0] < c_x):
+                        c_x=c_x-20
+                    else :
+                        c_x=c_x+20
+                    if -(coin[1]-c_y)/abs(coin[0]-c_x) >= 5/3:
+                        g=1
+                    else:
+                        g=0
+                    if(g==1):
+                        route = math.floor(coin[0] / 70)
+                        if(run_dis[route]>30 and player_r[route]!=1):
+                            run_dis[route] = 3000 - abs(coin[0]-self.car_pos[0])*2 - abs(coin[1]-self.car_pos[1])*2
+                            run_dis_sort[route] =  3000 - abs(coin[0]-self.car_pos[0])*2 - abs(coin[1]-self.car_pos[1])*2
             for i in range(0,8):
                 for j in range(i+1,9):
                     if run_dis_sort[i] < run_dis_sort[j]:
@@ -209,4 +248,6 @@ class MLPlay:
         """
         Reset the status
         """
+        global alive
+        alive=True
         pass
